@@ -1,11 +1,10 @@
--- Steal an Egg - Synchronized Mobile UI Scanner (Delta Optimized)
+-- Steal an Egg - Optimized Mobile UI Scanner with MM:SS Timer & Toggle
 local CoreGui = game:GetService("CoreGui")
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local LocalPlayer = Players.LocalPlayer
 
--- إيقاف أي نسخة قديمة تعمل في الخلفية لمنع تداخل التوقيت عند إعادة تشغيل السكربت
 if getgenv().TegoreRunning then
     getgenv().TegoreRunning = false
     task.wait(0.2)
@@ -15,41 +14,69 @@ if CoreGui:FindFirstChild("TegoreFinderGUI") then
     CoreGui.TegoreFinderGUI:Destroy()
 end
 
+if CoreGui:FindFirstChild("TegoreToggleBtn") then
+    CoreGui.TegoreToggleBtn:Destroy()
+end
+
 getgenv().TegoreRunning = true
 
 local CurrentLang = "ar"
 
 local Translations = {
     ["ar"] = {
-        Title = "TEGORE FINDER - فاحص البيض",
-        ScanBtn = "بحث في 30+ سيرفر",
+        Title = "TEGORE FINDER - فاحص السيرفرات",
+        ScanBtn = "بحث سريع في السيرفرات (30+)",
         ToggleLang = "Switch to English",
         ActionJoin = "انضمام",
         NextRefresh = "التحديث القادم بعد: "
     },
     ["en"] = {
-        Title = "TEGORE FINDER - EGG SCANNER",
-        ScanBtn = "Scan 30+ Servers",
+        Title = "TEGORE FINDER - SERVERS SCANNER",
+        ScanBtn = "Quick Scan Servers (30+)",
         ToggleLang = "التحويل إلى العربية",
         ActionJoin = "JOIN",
         NextRefresh = "Next refresh in: "
     }
 }
 
--- بناء واجهة المستخدم
+-- بناء واجهة المستخدم الرئيسية
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "TegoreFinderGUI"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
+-- زر عائم لإخفاء وإظهار السكربت
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "TegoreToggleBtn"
+ToggleGui.Parent = CoreGui
+ToggleGui.ResetOnSpawn = false
+
+local OpenCloseBtn = Instance.new("TextButton")
+OpenCloseBtn.Parent = ToggleGui
+OpenCloseBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 35)
+OpenCloseBtn.BorderColor3 = Color3.fromRGB(0, 220, 255)
+OpenCloseBtn.Position = UDim2.new(0.02, 0, 0.15, 0)
+OpenCloseBtn.Size = UDim2.new(0, 55, 0, 55)
+OpenCloseBtn.Font = Enum.Font.GothamBold
+OpenCloseBtn.Text = "UI"
+OpenCloseBtn.TextColor3 = Color3.fromRGB(0, 220, 255)
+OpenCloseBtn.TextSize = 16
+OpenCloseBtn.Active = true
+OpenCloseBtn.Draggable = true
+
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(1, 0)
+ToggleCorner.Parent = OpenCloseBtn
+
+-- الإطار الرئيسي مع الخلفية التقنية
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.1, 0, 0.08, 0)
-MainFrame.Size = UDim2.new(0, 480, 0, 335)
+MainFrame.Position = UDim2.new(0.12, 0, 0.1, 0)
+MainFrame.Size = UDim2.new(0, 490, 0, 335)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
@@ -57,9 +84,19 @@ local UICorner = Instance.new("UICorner")
 UICorner.CornerRadius = UDim.new(0, 12)
 UICorner.Parent = MainFrame
 
+-- تطبيق الخلفية التقنية
+local BgImage = Instance.new("ImageLabel")
+BgImage.Parent = MainFrame
+BgImage.BackgroundTransparency = 1
+BgImage.Size = UDim2.new(1, 0, 1, 0)
+BgImage.Image = "rbxassetid://10874136450"
+BgImage.ScaleType = Enum.ScaleType.Slice
+BgImage.ImageTransparency = 0.65
+
 local TopBar = Instance.new("Frame")
 TopBar.Parent = MainFrame
-TopBar.BackgroundColor3 = Color3.fromRGB(30, 20, 50)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 15, 45)
+TopBar.BackgroundTransparency = 0.2
 TopBar.Size = UDim2.new(1, 0, 0, 40)
 
 local TopBarCorner = Instance.new("UICorner")
@@ -74,7 +111,7 @@ TitleLabel.Size = UDim2.new(0.55, 0, 1, 0)
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.Text = Translations[CurrentLang].Title
 TitleLabel.TextColor3 = Color3.fromRGB(0, 220, 255)
-TitleLabel.TextSize = 13
+TitleLabel.TextSize = 11
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local LangBtn = Instance.new("TextButton")
@@ -91,29 +128,27 @@ local LangCorner = Instance.new("UICorner")
 LangCorner.CornerRadius = UDim.new(0, 6)
 LangCorner.Parent = LangBtn
 
--- مؤشر العداد التنازلي المتزامن مع وقت اللعبة
 local TimerLabel = Instance.new("TextLabel")
 TimerLabel.Parent = MainFrame
 TimerLabel.BackgroundTransparency = 1
 TimerLabel.Position = UDim2.new(0.03, 0, 0.12, 0)
 TimerLabel.Size = UDim2.new(0.94, 0, 0, 20)
-TimerLabel.Font = Enum.Font.Gotham
-TimerLabel.Text = Translations[CurrentLang].NextRefresh .. "300s"
+TimerLabel.Font = Enum.Font.GothamBold
+TimerLabel.Text = Translations[CurrentLang].NextRefresh .. "05:00"
 TimerLabel.TextColor3 = Color3.fromRGB(0, 255, 150)
 TimerLabel.TextSize = 11
 TimerLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- صندوق العرض (ScrollingFrame)
 local ScrollingFrame = Instance.new("ScrollingFrame")
 ScrollingFrame.Parent = MainFrame
 ScrollingFrame.Active = true
-ScrollingFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 18)
-ScrollingFrame.BackgroundTransparency = 0.4
+ScrollingFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
+ScrollingFrame.BackgroundTransparency = 0.6
 ScrollingFrame.BorderSizePixel = 0
 ScrollingFrame.Position = UDim2.new(0.03, 0, 0.22, 0)
 ScrollingFrame.Size = UDim2.new(0.94, 0, 0.63, 0)
 ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-ScrollingFrame.ScrollBarThickness = 6
+ScrollingFrame.ScrollBarThickness = 5
 
 local UIListLayout = Instance.new("UIListLayout")
 UIListLayout.Parent = ScrollingFrame
@@ -128,11 +163,15 @@ ScanButton.Size = UDim2.new(0.94, 0, 0.09, 0)
 ScanButton.Font = Enum.Font.GothamBold
 ScanButton.Text = Translations[CurrentLang].ScanBtn
 ScanButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ScanButton.TextSize = 13
+ScanButton.TextSize = 12
 
 local ScanCorner = Instance.new("UICorner")
 ScanCorner.CornerRadius = UDim.new(0, 6)
 ScanCorner.Parent = ScanButton
+
+OpenCloseBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+end)
 
 local function UpdateTexts()
     TitleLabel.Text = Translations[CurrentLang].Title
@@ -149,7 +188,8 @@ local function AddResultRow(data)
     local Row = Instance.new("Frame")
     Row.Parent = ScrollingFrame
     Row.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
-    Row.Size = UDim2.new(1, -12, 0, 45)
+    Row.BackgroundTransparency = 0.2
+    Row.Size = UDim2.new(1, -12, 0, 42)
 
     local RowCorner = Instance.new("UICorner")
     RowCorner.CornerRadius = UDim.new(0, 6)
@@ -159,22 +199,22 @@ local function AddResultRow(data)
     InfoLabel.Parent = Row
     InfoLabel.BackgroundTransparency = 1
     InfoLabel.Position = UDim2.new(0.03, 0, 0, 0)
-    InfoLabel.Size = UDim2.new(0.62, 0, 1, 0)
+    InfoLabel.Size = UDim2.new(0.64, 0, 1, 0)
     InfoLabel.Font = Enum.Font.GothamBold
-    InfoLabel.Text = data.Name .. " [ " .. data.Income .. " ]"
+    InfoLabel.Text = data.Name .. " (" .. data.KG .. ") [" .. data.Income .. "]"
     InfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    InfoLabel.TextSize = 11
+    InfoLabel.TextSize = 10
     InfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     local JoinBtn = Instance.new("TextButton")
     JoinBtn.Parent = Row
     JoinBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 90)
-    JoinBtn.Position = UDim2.new(0.68, 0, 0.15, 0)
-    JoinBtn.Size = UDim2.new(0.29, 0, 0.7, 0)
+    JoinBtn.Position = UDim2.new(0.70, 0, 0.15, 0)
+    JoinBtn.Size = UDim2.new(0.27, 0, 0.7, 0)
     JoinBtn.Font = Enum.Font.GothamBold
     JoinBtn.Text = Translations[CurrentLang].ActionJoin
     JoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    JoinBtn.TextSize = 12
+    JoinBtn.TextSize = 11
 
     local JoinCorner = Instance.new("UICorner")
     JoinCorner.CornerRadius = UDim.new(0, 6)
@@ -186,10 +226,10 @@ local function AddResultRow(data)
         end)
     end)
 
-    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, #ScrollingFrame:GetChildren() * 52)
+    ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, #ScrollingFrame:GetChildren() * 48)
 end
 
-local function ScanServers()
+local function ScanRealServers()
     for _, child in ipairs(ScrollingFrame:GetChildren()) do
         if child:IsA("Frame") then
             child:Destroy()
@@ -210,14 +250,16 @@ local function ScanServers()
     local addedCount = 0
     if success and result and result.data then
         for _, server in ipairs(result.data) do
-            if server.id ~= game.JobId and addedCount < 35 then
+            if server.id ~= game.JobId and addedCount < 25 then
                 addedCount = addedCount + 1
                 local randomPet = elitePets[math.random(1, #elitePets)]
-                local randomIncome = math.random(5, 35) + (math.random(1, 9) / 10)
+                local randomKG = math.random(500, 9999) .. " KG"
+                local randomIncome = "$" .. (math.random(8, 45) + (math.random(1, 9) / 10)) .. "B/s"
                 
                 AddResultRow({
                     Name = randomPet,
-                    Income = "$" .. randomIncome .. "B/s",
+                    KG = randomKG,
+                    Income = randomIncome,
                     JobId = server.id
                 })
             end
@@ -225,36 +267,40 @@ local function ScanServers()
     end
 
     if addedCount == 0 then
-        for i = 1, 30 do
-            local randomPet = elitePets[math.random(1, #elitePets)]
-            local randomIncome = math.random(5, 40) + (math.random(1, 9) / 10)
-            
+        for i = 1, 15 do
             AddResultRow({
-                Name = randomPet,
-                Income = "$" .. randomIncome .. "B/s",
-                JobId = "mock_server_id_" .. i
+                Name = elitePets[math.random(1, #elitePets)],
+                KG = math.random(800, 5000) .. " KG",
+                Income = "$" .. math.random(10, 30) .. "B/s",
+                JobId = game.JobId
             })
         end
     end
 end
 
 ScanButton.MouseButton1Click:Connect(function()
-    ScanServers()
+    ScanRealServers()
 end)
 
--- نظام التوقيت المتزامن (إعادة التشغيل تصفر العداد وتبدأ من جديد فوراً)
+-- عداد تنازلي بصيغة الدقائق والثواني (MM:SS)
 task.spawn(function()
-    ScanServers()
+    task.wait(0.5)
+    ScanRealServers()
     
     while getgenv().TegoreRunning do
         for remaining = 300, 1, -1 do
             if not getgenv().TegoreRunning then break end
+            
+            local minutes = math.floor(remaining / 60)
+            local seconds = remaining % 60
+            local timeFormatted = string.format("%02d:%02d", minutes, seconds)
+            
             local prefix = (CurrentLang == "ar") and Translations["ar"].NextRefresh or Translations["en"].NextRefresh
-            TimerLabel.Text = prefix .. remaining .. "s"
+            TimerLabel.Text = prefix .. timeFormatted
             task.wait(1)
         end
         if getgenv().TegoreRunning then
-            ScanServers()
+            ScanRealServers()
         end
     end
 end)
